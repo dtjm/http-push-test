@@ -1,0 +1,9 @@
+{
+    "name": "http-push-test",
+    "version": "0.1.0",
+    "dependencies": {
+        "express": "*",
+        "underscore": "*",
+        "socket.io": "*"
+    }
+}

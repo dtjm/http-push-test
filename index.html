@@ -1,0 +1,70 @@
+<html>
+    <head>
+        <title>HTTP Push Test</title>
+        <style type="text/css">
+            div {
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                float: left;
+                margin: 10px;
+                width: 200px;
+            }
+
+            div h2 {
+                background: #ddd;
+                border-bottom: 1px solid #ccc;
+                font-size: 16px;
+                margin: 0;
+                padding: 10px;
+            }
+
+            div p {
+                margin: 0;
+                padding: 10px;
+            }
+        </style>
+
+        <script type="text/javascript" src="/eventsource.js"></script>
+        <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    </head>
+    <div id="sse">
+        <h2>Server-sent Events</h2>
+        <p></p>
+    </div>
+    <div id="multipart">
+        <h2>multipart/x-mixed-replace</h2>
+        <p></p>
+    </div>
+    <div id="socketio">
+        <h2>Socket.io</h2>
+        <p></p>
+    </div>
+    <body>
+    <script type="text/javascript">
+        (function(){
+            var sse = new EventSource("/sse");
+            var sseEl = document.getElementById("sse");
+            sse.onmessage = function(evt){
+                sseEl.childNodes[3].textContent = evt.data;
+            };
+
+            var xhr = new XMLHttpRequest();
+            var mpEl = document.getElementById("multipart");
+            xhr.multipart = true;
+            xhr.open("GET", "/multipart");
+            xhr.onreadystatechange = function(evt) {
+                if(xhr.readyState === 3) {
+                    mpEl.childNodes[3].textContent = xhr.responseText;
+                }
+            };
+            xhr.send();
+
+            var dateChannel = io.connect('http://localhost:8000/date');
+            var sioEl = document.getElementById("socketio");
+            dateChannel.on('date', function (data) {
+                sioEl.childNodes[3].textContent = data;
+            });
+        })();
+        </script>
+    </body>
+</html>
