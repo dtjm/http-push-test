@@ -3,9 +3,18 @@ var app = Express.createServer();
 
 var io = require("socket.io").listen(app);
 
+io.configure(function(){
+    io.set("transports", ["htmlfile", "xhr-polling", "jsonp-polling"]);
+});
+
 var GLOBAL_ID = 0;
 var DELAY = 1000;
 var MULTIPART_BOUNDARY = "EVENT";
+var EMPTY_2KB = "";
+
+for(var i = 0; i < 2048; i++) {
+    EMPTY_2KB += "\n";
+};
 
 var writeSSEEvent = function(res, data){
     var lines = data.split("\n");
@@ -29,10 +38,20 @@ app.get("/", function(req, res){
 });
 
 app.get("/sse", function(req, res){
-    res.header("Content-type", "text/event-stream");
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    });
+
+    // Send 2KB prelude if this is IE
+    if(req.header("user-agent").indexOf("MSIE") !== -1) {
+        res.write(EMPTY_2KB);
+    }
     startLoop(function(){
-        // console.log("SSE");
-        if(res.finished) return false;
+        console.log("SSE");
+        if(!res.connection.writable) return false;
 
         writeSSEEvent(res, (new Date).toUTCString());
         return true;
@@ -77,5 +96,25 @@ var dateChan = io
         console.log("SOCKET IO DISCONNECT");
         dateChanSubscribers -= 1;
     });
+
+
+var writeIFrameScriptTag = function(res, text){
+    var data = {text: "HTMLFILE/" + text};
+    res.write(
+        "<script>" +
+        "parent.callback(" + JSON.stringify(data) + ");" +
+        "</script>\n"
+    );
+};
+
+app.get("/htmlfile.js", function(req, res){
+    //res.header("Content-type", "text/javascript");
+    startLoop(function(){
+        if(res.finished) return false;
+        writeIFrameScriptTag(res, (new Date).toUTCString());
+        return true
+    }, DELAY);
+});
+
 
 app.listen(8000);

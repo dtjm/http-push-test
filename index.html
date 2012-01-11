@@ -6,7 +6,9 @@
                 border: 1px solid #ccc;
                 border-radius: 3px;
                 float: left;
+                height: 100px;
                 margin: 10px;
+                max-height: 100px;
                 width: 200px;
             }
 
@@ -35,6 +37,10 @@
         <h2>multipart/x-mixed-replace</h2>
         <p></p>
     </div>
+    <div id="htmlfile">
+        <h2>htmlfile</h2>
+        <p></p>
+    </div>
     <div id="socketio">
         <h2>Socket.io</h2>
         <p></p>
@@ -42,28 +48,55 @@
     <body>
     <script type="text/javascript">
         (function(){
-            var sse = new EventSource("/sse");
-            var sseEl = document.getElementById("sse");
-            sse.onmessage = function(evt){
-                sseEl.childNodes[3].textContent = evt.data;
+            var setText = function(id, text){
+                var el = document.getElementById(id);
+                var p = el.getElementsByTagName("p")[0];
+                p.textContent = p.innerText = text;
             };
+            // SERVER-SENT EVENTS
+            var sse = new EventSource("/sse");
+            var sseOnMessage = sse.onmessage = function(evt){
+                setText("sse", evt.data);
+            };
+            //sse.addEventListener("message", sseOnMessage);
 
+            // MULTIPART
             var xhr = new XMLHttpRequest();
-            var mpEl = document.getElementById("multipart");
             xhr.multipart = true;
             xhr.open("GET", "/multipart");
             xhr.onreadystatechange = function(evt) {
                 if(xhr.readyState === 3) {
-                    mpEl.childNodes[3].textContent = xhr.responseText;
+                    if(typeof(xhr.responseText) !== "unknown")
+                    setText("multipart", xhr.responseText);
                 }
             };
             xhr.send();
 
-            var dateChannel = io.connect('http://localhost:8000/date');
-            var sioEl = document.getElementById("socketio");
+            // SOCKET.IO
+            var dateChannel = io.connect('/date');
             dateChannel.on('date', function (data) {
-                sioEl.childNodes[3].textContent = data;
+                    setText("socketio", data);
             });
+
+            // HTMLFILE
+            if(typeof ActiveXObject === "undefined") {
+                setText("htmlfile", "ActiveXObject not available");
+            } else {
+            var transferDoc = new ActiveXObject("htmlfile");
+            transferDoc.open();
+            transferDoc.write(
+                    "<html><script>" +
+                    "document.domain='" + document.domain + "';" + 
+                    "<\/script><\/html>"
+            );
+            transferDoc.close();
+            var ifrDiv = transferDoc.createElement("div");
+            transferDoc.body.appendChild(ifrDiv);
+            //ifrDiv.innerHTML = "<iframe src='\/htmlfile.js'><\/iframe>";
+            transferDoc.callback = function(data){
+                setText("htmlfile", data.message);
+            };
+            }
         })();
         </script>
     </body>

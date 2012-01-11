@@ -135,7 +135,7 @@
       xhr = global.XDomainRequest ? new global.XDomainRequest() : new global.XMLHttpRequest();
 
       // with GET method in FF xhr.onreadystatechange with readyState === 3 doesn't work + POST = no-cache
-      xhr.open('POST', url, true);
+      xhr.open('GET', url, true);
 
       function onReadyStateChange(readyState) {
         var responseText = '',
